@@ -1,6 +1,7 @@
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
 from flask import Flask, request, jsonify, redirect, Response
+from bson import json_util
 import json
 import uuid
 import time
@@ -98,9 +99,11 @@ def get_student():
         
         Σε περίπτωση που δε βρεθεί κάποιος φοιτητής, να επιστρέφεται ανάλογο μήνυμα.
     """
+    # session validation to be added
+    student = list(students.find({'email': data['email']}))
 
     # Η παρακάτω εντολή χρησιμοποιείται μόνο στη περίπτωση επιτυχούς αναζήτησης φοιτητών (δηλ. υπάρχει φοιτητής με αυτό το email).
-    return Response(json.dumps(student), status=200, mimetype='application/json')
+    return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
 
 # ΕΡΩΤΗΜΑ 4: Επιστροφή όλων των φοιτητών που είναι 30 ετών
 @app.route('/getStudents/thirties', methods['GET'])
