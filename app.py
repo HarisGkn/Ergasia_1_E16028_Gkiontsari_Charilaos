@@ -120,6 +120,10 @@ def get_students_thirty():
         
         Σε περίπτωση που δε βρεθεί κάποιος φοιτητής, να επιστρέφεται ανάλογο μήνυμα και όχι κενή λίστα.
     """
+    student = list(students.find({'yearOfBirth': 1991}))
+    for data in student:
+        print(data)
+    return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
     
     # Η παρακάτω εντολή χρησιμοποιείται μόνο σε περίπτωση επιτυχούς αναζήτησης φοιτητών (δηλ. υπάρχουν φοιτητές που είναι 30 ετών).
     return Response(json.dumps(students), status=200, mimetype='application/json')
@@ -139,9 +143,10 @@ def get_students_thirty():
         
         Σε περίπτωση που δε βρεθεί κάποιος φοιτητής, να επιστρέφεται ανάλογο μήνυμα και όχι κενή λίστα.
     """
-
-    # Η παρακάτω εντολή χρησιμοποιείται μόνο σε περίπτωση επιτυχούς αναζήτησης φοιτητών (υπάρχουν φοιτητές που είναι τουλάχιστον 30 ετών).
-    return Response(json.dumps(students), status=200, mimetype='application/json')
+    student = list(students.find({'yearOfBirth': {"$gt":1990}}))
+    for data in student:
+        print(data)
+    return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
 
 # ΕΡΩΤΗΜΑ 6: Επιστροφή φοιτητή που έχει δηλώσει κατοικία βάσει email 
 @app.route('/getStudentAddress', methods=['GET'])
