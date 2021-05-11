@@ -15,11 +15,16 @@ db = client['InfoSys']
 # Choose collections
 students = db['Students']
 users = db['Users']
+uuids = db['uuid']
+
+uuids.delete_many({})
 
 # Initiate Flask App
 app = Flask(__name__)
 
 users_sessions = {}
+
+document = uuids.find_one({})
 
 def create_session(username):
     user_uuid = str(uuid.uuid1())
@@ -27,7 +32,39 @@ def create_session(username):
     return user_uuid  
 
 def is_session_valid(user_uuid):
-    return user_uuid in users_sessions
+    # return user_uuid in users_sessions
+    return uuids.find_one({})
+
+
+
+
+# ΕΡΩΤΗΜΑ 2: Login στο σύστημα
+@app.route('/login', methods=['POST'])
+def login():
+    # Request JSON data
+    data = None 
+    try:
+        data = json.loads(request.data)
+    except Exception as e:
+        return Response("bad json content",status=500,mimetype='application/json')
+    if data == None:
+        return Response("bad request",status=500,mimetype='application/json')
+    if not "username" in data or not "password" in data:
+        return Response("Information incomplete",status=500,mimetype="application/json")
+
+
+    if users.find({ "username" : data['username'], "password" : data['password']} ).count() > 0: 
+        user_uuid = create_session(data['username'])
+        res = {"uuid": user_uuid, "username": data['username']}
+        uuids.insert_one({'username': data['username'] ,"uuid": user_uuid})
+        return Response(json.dumps(res), mimetype='application/json'),200 # ΠΡΟΣΘΗΚΗ STATUS
+    else:
+        # Μήνυμα λάθους (Λάθος username ή password)
+        return Response("Wrong username or password.",mimetype='application/json'),400 # ΠΡΟΣΘΗΚΗ STATUS
+
+
+
+
 
 # ΕΡΩΤΗΜΑ 3: Επιστροφή φοιτητή βάσει email 
 @app.route('/getStudent', methods=['GET'])
@@ -43,12 +80,16 @@ def get_student():
     if not "email" in data:
         return Response("Information incomplete",status=500,mimetype="application/json")
 # session validation to be added
-    student = list(students.find({'email': data['email']}))
-    for data in student:
-        print(data)
+
+    if(is_session_valid(document)):
+        student = list(students.find({'email': data['email']}))
+            # Η παρακάτω εντολή χρησιμοποιείται μόνο στη περίπτωση επιτυχούς αναζήτησης φοιτητών (δηλ. υπάρχει φοιτητής με αυτό το email).
+        return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
+    else:
+        return Response("Log in first",mimetype='application/json'),400 # ΠΡΟΣΘΗΚΗ STATUS
     
-    # Η παρακάτω εντολή χρησιμοποιείται μόνο στη περίπτωση επιτυχούς αναζήτησης φοιτητών (δηλ. υπάρχει φοιτητής με αυτό το email).
-    return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
+    
+
 
 # Εκτέλεση flask service σε debug mode, στην port 5000. 
 if __name__ == '__main__':

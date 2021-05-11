@@ -15,11 +15,16 @@ db = client['InfoSys']
 # Choose collections
 students = db['Students']
 users = db['Users']
+uuids = db['uuid']
+
+uuids.delete_many({})
 
 # Initiate Flask App
 app = Flask(__name__)
 
 users_sessions = {}
+
+document = uuids.find_one({})
 
 def create_session(username):
     user_uuid = str(uuid.uuid1())
@@ -27,7 +32,8 @@ def create_session(username):
     return user_uuid  
 
 def is_session_valid(user_uuid):
-    return user_uuid in users_sessions
+    # return user_uuid in users_sessions
+    return uuids.find()
 
 # ΕΡΩΤΗΜΑ 1: Δημιουργία χρήστη
 @app.route('/createUser', methods=['POST'])
@@ -68,6 +74,7 @@ def login():
     if users.find({ "username" : data['username'], "password" : data['password']} ).count() > 0: 
         user_uuid = create_session(data['username'])
         res = {"uuid": user_uuid, "username": data['username']}
+        uuids.insert_one({'username': data['username'] ,"uuid": user_uuid})
         return Response(json.dumps(res), mimetype='application/json'),200 # ΠΡΟΣΘΗΚΗ STATUS
     else:
         # Μήνυμα λάθους (Λάθος username ή password)
@@ -86,67 +93,32 @@ def get_student():
         return Response("bad request",status=500,mimetype='application/json')
     if not "email" in data:
         return Response("Information incomplete",status=500,mimetype="application/json")
+# session validation to be added
 
-    """
-        Στα headers του request ο χρήστης θα πρέπει να περνάει το uuid το οποίο έχει λάβει κατά την είσοδό του στο σύστημα. 
-            Π.Χ: uuid = request.headers.get['authorization']
-        Για τον έλεγχο του uuid να καλεστεί η συνάρτηση is_session_valid() (!!! Η ΣΥΝΑΡΤΗΣΗ is_session_valid() ΕΙΝΑΙ ΗΔΗ ΥΛΟΠΟΙΗΜΕΝΗ) με παράμετρο το uuid. 
-            * Αν η συνάρτηση επιστρέψει False ο χρήστης δεν έχει αυθεντικοποιηθεί. Σε αυτή τη περίπτωση να επιστρέφεται ανάλογο μήνυμα με response code 401. 
-            * Αν η συνάρτηση επιστρέψει True, ο χρήστης έχει αυθεντικοποιηθεί. 
-
-        Το συγκεκριμένο endpoint θα δέχεται σαν argument το email του φοιτητή και θα επιστρέφει τα δεδομένα του. 
-        Να περάσετε τα δεδομένα του φοιτητή σε ένα dictionary που θα ονομάζεται student.
-        
-        Σε περίπτωση που δε βρεθεί κάποιος φοιτητής, να επιστρέφεται ανάλογο μήνυμα.
-    """
-    # session validation to be added
-    student = list(students.find({'email': data['email']}))
-
-    # Η παρακάτω εντολή χρησιμοποιείται μόνο στη περίπτωση επιτυχούς αναζήτησης φοιτητών (δηλ. υπάρχει φοιτητής με αυτό το email).
-    return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
+    if(is_session_valid(document)):
+        student = list(students.find({'email': data['email']}))
+            # Η παρακάτω εντολή χρησιμοποιείται μόνο στη περίπτωση επιτυχούς αναζήτησης φοιτητών (δηλ. υπάρχει φοιτητής με αυτό το email).
+        return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
+    else:
+        return Response("Log in first",mimetype='application/json'),400 # ΠΡΟΣΘΗΚΗ STATUS
 
 # ΕΡΩΤΗΜΑ 4: Επιστροφή όλων των φοιτητών που είναι 30 ετών
-@app.route('/getStudents/thirties', methods['GET'])
+@app.route('/getStudents/thirties', methods=['GET'])
 def get_students_thirty():
-    """
-        Στα headers του request ο χρήστης θα πρέπει να περνάει το uuid το οποίο έχει λάβει κατά την είσοδό του στο σύστημα. 
-            Π.Χ: uuid = request.headers.get['authorization']
-        Για τον έλεγχο του uuid να καλεστεί η συνάρτηση is_session_valid() (!!! Η ΣΥΝΑΡΤΗΣΗ is_session_valid() ΕΙΝΑΙ ΗΔΗ ΥΛΟΠΟΙΗΜΕΝΗ) με παράμετρο το uuid. 
-            * Αν η συνάρτηση επιστρέψει False ο χρήστης δεν έχει αυθεντικοποιηθεί. Σε αυτή τη περίπτωση να επιστρέφεται ανάλογο μήνυμα με response code 401. 
-            * Αν η συνάρτηση επιστρέψει True, ο χρήστης έχει αυθεντικοποιηθεί. 
-        
-        Το συγκεκριμένο endpoint θα πρέπει να επιστρέφει τη λίστα των φοιτητών οι οποίοι είναι 30 ετών.
-        Να περάσετε τα δεδομένα των φοιτητών σε μία λίστα που θα ονομάζεται students.
-        
-        Σε περίπτωση που δε βρεθεί κάποιος φοιτητής, να επιστρέφεται ανάλογο μήνυμα και όχι κενή λίστα.
-    """
-    student = list(students.find({'yearOfBirth': 1991}))
-    for data in student:
-        print(data)
-    return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
-    
-    # Η παρακάτω εντολή χρησιμοποιείται μόνο σε περίπτωση επιτυχούς αναζήτησης φοιτητών (δηλ. υπάρχουν φοιτητές που είναι 30 ετών).
-    return Response(json.dumps(students), status=200, mimetype='application/json')
+    if(is_session_valid(document)):
+        student = list(students.find({'yearOfBirth': 1991}))
+        return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
+    else:
+        return Response("Log in first",mimetype='application/json'),400 # ΠΡΟΣΘΗΚΗ STATUS
 
 # ΕΡΩΤΗΜΑ 5: Επιστροφή όλων των φοιτητών που είναι τουλάχιστον 30 ετών
-@app.route('/getStudents/oldies', methods['GET'])
+@app.route('/getStudents/oldies', methods=['GET'])
 def get_students_thirty():
-    """
-        Στα headers του request ο χρήστης θα πρέπει να περνάει και το uuid το οποίο έχει λάβει κατά την είσοδό του στο σύστημα. 
-            Π.Χ: uuid = request.headers.get['authorization']
-        Για τον έλεγχο του uuid να καλεστεί η συνάρτηση is_session_valid() (!!! Η ΣΥΝΑΡΤΗΣΗ is_session_valid() ΕΙΝΑΙ ΗΔΗ ΥΛΟΠΟΙΗΜΕΝΗ) με παράμετρο το uuid. 
-            * Αν η συνάρτηση επιστρέψει False ο χρήστης δεν έχει αυθεντικοποιηθεί. Σε αυτή τη περίπτωση να επιστρέφεται ανάλογο μήνυμα με response code 401. 
-            * Αν η συνάρτηση επιστρέψει True, ο χρήστης έχει αυθεντικοποιηθεί. 
-        
-        Το συγκεκριμένο endpoint θα πρέπει να επιστρέφει τη λίστα των φοιτητών οι οποίοι είναι 30 ετών και άνω.
-        Να περάσετε τα δεδομένα των φοιτητών σε μία λίστα που θα ονομάζεται students.
-        
-        Σε περίπτωση που δε βρεθεί κάποιος φοιτητής, να επιστρέφεται ανάλογο μήνυμα και όχι κενή λίστα.
-    """
-    student = list(students.find({'yearOfBirth': {"$gt":1990}}))
-    for data in student:
-        print(data)
-    return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
+    if(is_session_valid(document)):
+        student = list(students.find({'yearOfBirth': {"$gt":1990}}))
+        return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
+    else:
+        return Response("Log in first",mimetype='application/json') # ΠΡΟΣΘΗΚΗ STATUS
 
 # ΕΡΩΤΗΜΑ 6: Επιστροφή φοιτητή που έχει δηλώσει κατοικία βάσει email 
 @app.route('/getStudentAddress', methods=['GET'])
