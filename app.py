@@ -100,7 +100,7 @@ def get_student():
             # Η παρακάτω εντολή χρησιμοποιείται μόνο στη περίπτωση επιτυχούς αναζήτησης φοιτητών (δηλ. υπάρχει φοιτητής με αυτό το email).
         return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
     else:
-        return Response("Log in first",mimetype='application/json'),400 # ΠΡΟΣΘΗΚΗ STATUS
+        return Response("Log in first",mimetype='application/json'),400 
 
 # ΕΡΩΤΗΜΑ 4: Επιστροφή όλων των φοιτητών που είναι 30 ετών
 @app.route('/getStudents/thirties', methods=['GET'])
@@ -109,21 +109,22 @@ def get_students_thirty():
         student = list(students.find({'yearOfBirth': 1991}))
         return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
     else:
-        return Response("Log in first",mimetype='application/json'),400 # ΠΡΟΣΘΗΚΗ STATUS
+        return Response("Log in first",mimetype='application/json'),400 
 
 # ΕΡΩΤΗΜΑ 5: Επιστροφή όλων των φοιτητών που είναι τουλάχιστον 30 ετών
 @app.route('/getStudents/oldies', methods=['GET'])
-def get_students_thirty():
+def get_students_thirty1():
     if(is_session_valid(document)):
         student = list(students.find({'yearOfBirth': {"$gt":1990}}))
         return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
     else:
-        return Response("Log in first",mimetype='application/json') # ΠΡΟΣΘΗΚΗ STATUS
+        return Response("Log in first",mimetype='application/json') 
 
 # ΕΡΩΤΗΜΑ 6: Επιστροφή φοιτητή που έχει δηλώσει κατοικία βάσει email 
 @app.route('/getStudentAddress', methods=['GET'])
-def get_student():
+def get_student1():
     # Request JSON data
+    student = {}
     data = None 
     try:
         data = json.loads(request.data)
@@ -134,24 +135,14 @@ def get_student():
     if not "email" in data:
         return Response("Information incomplete",status=500,mimetype="application/json")
 
-    """
-        Στα headers του request ο χρήστης θα πρέπει να περνάει και το uuid το οποίο έχει λάβει κατά την είσοδό του στο σύστημα. 
-            Π.Χ: uuid = request.headers.get['authorization']
-        Για τον έλεγχο του uuid να καλεστεί η συνάρτηση is_session_valid() (!!! Η ΣΥΝΑΡΤΗΣΗ is_session_valid() ΕΙΝΑΙ ΗΔΗ ΥΛΟΠΟΙΗΜΕΝΗ) με παράμετρο το uuid. 
-            * Αν η συνάρτηση επιστρέψει False ο χρήστης δεν έχει αυθεντικοποιηθεί. Σε αυτή τη περίπτωση να επιστρέφεται ανάλογο μήνυμα με response code 401. 
-            * Αν η συνάρτηση επιστρέψει True, ο χρήστης έχει αυθεντικοποιηθεί. 
-
-        Το συγκεκριμένο endpoint θα δέχεται σαν argument το email του φοιτητή. 
-        * Στη περίπτωση που ο φοιτητής έχει δηλωμένη τη κατοικία του, θα πρέπει να επιστρέφεται το όνομα του φοιτητή η διεύθυνσή του(street) και ο Ταχυδρομικός Κωδικός (postcode) της διεύθυνσης αυτής.
-        * Στη περίπτωη που είτε ο φοιτητής δεν έχει δηλωμένη κατοικία, είτε δεν υπάρχει φοιτητής με αυτό το email στο σύστημα, να επιστρέφεται μήνυμα λάθους. 
-        
-        Αν υπάρχει όντως ο φοιτητής με δηλωμένη κατοικία, να περάσετε τα δεδομένα του σε ένα dictionary που θα ονομάζεται student.
-        Το student{} να είναι της μορφής: 
-        student = {"name": "Student's name", "street": "The street where the student lives", "postcode": 11111}
-    """
-
-    # Η παρακάτω εντολή χρησιμοποιείται μόνο σε περίπτωση επιτυχούς αναζήτησης φοιτητή (υπάρχει ο φοιτητής και έχει δηλωμένη κατοικία).
-    return Response(json.dumps(student), status=200, mimetype='application/json')
+    if(is_session_valid(document)):
+        if students.find_one({'email': data['email'], "address": {"$exists":True}}):
+            student = students.find_one({'email': data['email']}, {'_id':0 ,'name': 1, 'address.street':1, 'address.postcode':1})
+            return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json') 
+        else:
+            return "No address found"
+    else:
+        return Response("Log in first",mimetype='application/json') 
 
 # ΕΡΩΤΗΜΑ 7: Διαγραφή φοιτητή βάσει email 
 @app.route('/deleteStudent', methods=['DELETE'])
@@ -167,22 +158,15 @@ def delete_student():
     if not "email" in data:
         return Response("Information incomplete",status=500,mimetype="application/json")
 
-    """
-        Στα headers του request ο χρήστης θα πρέπει να περνάει και το uuid το οποίο έχει λάβει κατά την είσοδό του στο σύστημα. 
-            Π.Χ: uuid = request.headers.get['authorization']
-        Για τον έλεγχο του uuid να καλεστεί η συνάρτηση is_session_valid() (!!! Η ΣΥΝΑΡΤΗΣΗ is_session_valid() ΕΙΝΑΙ ΗΔΗ ΥΛΟΠΟΙΗΜΕΝΗ) με παράμετρο το uuid. 
-            * Αν η συνάρτηση επιστρέψει False ο χρήστης δεν έχει αυθεντικοποιηθεί. Σε αυτή τη περίπτωση να επιστρέφεται ανάλογο μήνυμα με response code 401. 
-            * Αν η συνάρτηση επιστρέψει True, ο χρήστης έχει αυθεντικοποιηθεί. 
-
-        Το συγκεκριμένο endpoint θα δέχεται σαν argument το email του φοιτητή. 
-        * Στη περίπτωση που υπάρχει φοιτητής με αυτό το email, να διαγράφεται από τη ΒΔ. Να επιστρέφεται μήνυμα επιτυχούς διαγραφής του φοιτητή.
-        * Διαφορετικά, να επιστρέφεται μήνυμα λάθους. 
-        
-        Και στις δύο περιπτώσεις, να δημιουργήσετε μία μεταβλήτη msg (String), η οποία θα περιλαμβάνει το αντίστοιχο μήνυμα.
-        Αν βρεθεί ο φοιτητής και διαγραφεί, στο μήνυμα θα πρέπει να δηλώνεται και το όνομά του (πχ: msg = "Morton Fitzgerald was deleted.").
-    """
-
-    return Response(msg, status=200, mimetype='application/json')
+    if(is_session_valid(document)):
+        if students.find_one({'email': data['email']}):
+            students.delete_one({'email': data['email']})
+            msg = "student deleted"
+            return Response(msg, status=200, mimetype='application/json')
+        else:
+            return "No address found"
+    else:
+        return Response("Log in first",mimetype='application/json') 
 
 # ΕΡΩΤΗΜΑ 8: Εισαγωγή μαθημάτων σε φοιτητή βάσει email 
 @app.route('/addCourses', methods=['PATCH'])
@@ -195,40 +179,28 @@ def add_courses():
         return Response("bad json content",status=500,mimetype='application/json')
     if data == None:
         return Response("bad request",status=500,mimetype='application/json')
-    if not "email" in data or not "courses" in data:
+    if not "email" in data:
         return Response("Information incomplete",status=500,mimetype="application/json")
+    
+    courses = [
+        data["courses"]
+    ]
 
-    """
-        Στα headers του request ο χρήστης θα πρέπει να περνάει και το uuid το οποίο έχει λάβει κατά την είσοδό του στο σύστημα. 
-            Π.Χ: uuid = request.headers.get['authorization']
-        Για τον έλεγχο του uuid να καλεστεί η συνάρτηση is_session_valid() (!!! Η ΣΥΝΑΡΤΗΣΗ is_session_valid() ΕΙΝΑΙ ΗΔΗ ΥΛΟΠΟΙΗΜΕΝΗ) με παράμετρο το uuid. 
-            * Αν η συνάρτηση επιστρέψει False ο χρήστης δεν έχει αυθεντικοποιηθεί. Σε αυτή τη περίπτωση να επιστρέφεται ανάλογο μήνυμα με response code 401. 
-            * Αν η συνάρτηση επιστρέψει True, ο χρήστης έχει αυθεντικοποιηθεί. 
-
-        Το συγκεκριμένο endpoint θα δέχεται σαν argument το email του φοιτητή. Στο body του request θα πρέπει δίνεται ένα json της παρακάτω μορφής:
-        
-        {
-            email: "an email",
-            courses: [
-                {'course 1': 10, 
-                {'course 2': 3 }, 
-                {'course 3': 8},
-                ...
-            ]
-        } 
-        
-        Η λίστα courses έχει μία σειρά από dictionary για τα οποία τα key αντιστοιχούν σε τίτλο μαθημάτων και το value στο βαθμό που έχει λάβει ο φοιτητής σε αυτό το μάθημα.
-        * Στη περίπτωση που υπάρχει φοιτητής με αυτό το email, θα πρέπει να γίνει εισαγωγή των μαθημάτων και των βαθμών τους, σε ένα νέο key του document του φοιτητή που θα ονομάζεται courses. 
-        * Το νέο αυτό key θα πρέπει να είναι μία λίστα από dictionary.
-        * Αν δε βρεθεί φοιτητής με αυτό το email να επιστρέφεται μήνυμα λάθους. 
-    """
-
-    return Response(msg, status=200, mimetype='application/json')
+    if(is_session_valid(document)):
+        if students.find_one({'email': data['email']}):
+            students.update({'email': data['email']}, {'$set': {'courses': courses}})
+            msg = "courses added"
+            return Response(msg, status=200, mimetype='application/json')
+        else:
+            return "No address found"
+    else:
+        return Response("Log in first",mimetype='application/json') 
 
 # ΕΡΩΤΗΜΑ 9: Επιστροφή περασμένων μαθημάτων φοιτητή βάσει email
 @app.route('/getPassedCourses', methods=['GET'])
 def get_courses():
     # Request JSON data
+    student = {}
     data = None 
     try:
         data = json.loads(request.data)
@@ -239,23 +211,14 @@ def get_courses():
     if not "email" in data:
         return Response("Information incomplete",status=500,mimetype="application/json")
 
-    """
-        Στα headers του request ο χρήστης θα πρέπει να περνάει και το uuid το οποίο έχει λάβει κατά την είσοδό του στο σύστημα. 
-            Π.Χ: uuid = request.headers.get['authorization']
-        Για τον έλεγχο του uuid να καλεστεί η συνάρτηση is_session_valid() (!!! Η ΣΥΝΑΡΤΗΣΗ is_session_valid() ΕΙΝΑΙ ΗΔΗ ΥΛΟΠΟΙΗΜΕΝΗ) με παράμετρο το uuid. 
-            * Αν η συνάρτηση επιστρέψει False ο χρήστης δεν έχει αυθεντικοποιηθεί. Σε αυτή τη περίπτωση να επιστρέφεται ανάλογο μήνυμα με response code 401. 
-            * Αν η συνάρτηση επιστρέψει True, ο χρήστης έχει αυθεντικοποιηθεί. 
-
-        Το συγκεκριμένο endpoint θα δέχεται σαν argument το email του φοιτητή.
-        * Στη περίπτωση που ο φοιτητής έχει βαθμολογία σε κάποια μαθήματα, θα πρέπει να επιστρέφεται το όνομά του (name) καθώς και τα μαθήματα που έχει πέρασει.
-        * Στη περίπτωη που είτε ο φοιτητής δεν περάσει κάποιο μάθημα, είτε δεν υπάρχει φοιτητής με αυτό το email στο σύστημα, να επιστρέφεται μήνυμα λάθους.
-        
-        Αν υπάρχει όντως ο φοιτητής με βαθμολογίες σε κάποια μαθήματα, να περάσετε τα δεδομένα του σε ένα dictionary που θα ονομάζεται student.
-        Το dictionary student θα πρέπει να είναι της μορφής: student = {"course name 1": X1, "course name 2": X2, ...}, όπου X1, X2, ... οι βαθμολογίες (integer) των μαθημάτων στα αντίστοιχα μαθήματα.
-    """
-
-    # Η παρακάτω εντολή χρησιμοποιείται μόνο σε περίπτωση επιτυχούς αναζήτησης φοιτητή (υπάρχει ο φοιτητής και έχει βαθμολογίες στο όνομά του).
-    return Response(json.dumps(student), status=200, mimetype='application/json')
+    if(is_session_valid(document)):
+        if students.find_one({'email': data['email'], "courses": {"$exists":True}}):
+            student = students.find_one({'email': data['email']}, {'_id':0 ,'name': 1, 'courses': 1 })
+            return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json') 
+        else:
+            return "No address found"
+    else:
+        return Response("Log in first",mimetype='application/json') 
 
 # Εκτέλεση flask service σε debug mode, στην port 5000. 
 if __name__ == '__main__':

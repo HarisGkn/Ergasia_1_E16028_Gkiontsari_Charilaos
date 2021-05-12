@@ -65,7 +65,7 @@ def get_students_thirty():
         student = list(students.find({'yearOfBirth': {"$gt":1990}}))
         return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
     else:
-        return Response("Log in first",mimetype='application/json') # ΠΡΟΣΘΗΚΗ STATUS
+        return Response("Log in first",mimetype='application/json') 
 
 # Εκτέλεση flask service σε debug mode, στην port 5000. 
 if __name__ == '__main__':

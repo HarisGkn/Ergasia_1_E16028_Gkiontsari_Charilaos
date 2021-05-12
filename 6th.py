@@ -63,6 +63,7 @@ def login():
 @app.route('/getStudentAddress', methods=['GET'])
 def get_student():
     # Request JSON data
+    student = {}
     data = None 
     try:
         data = json.loads(request.data)
@@ -74,10 +75,13 @@ def get_student():
         return Response("Information incomplete",status=500,mimetype="application/json")
 
     if(is_session_valid(document)):
-        # student = list(students.find({'yearOfBirth': {"$gt":1990}}))
-        return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
+        if students.find_one({'email': data['email'], "address": {"$exists":True}}):
+            student = students.find_one({'email': data['email']}, {'_id':0 ,'name': 1, 'address.street':1, 'address.postcode':1})
+            return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json') 
+        else:
+            return "No address found"
     else:
-        return Response("Log in first",mimetype='application/json') # ΠΡΟΣΘΗΚΗ STATUS
+        return Response("Log in first",mimetype='application/json') 
 
 
 

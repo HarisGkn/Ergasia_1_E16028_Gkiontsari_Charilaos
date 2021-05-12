@@ -86,7 +86,7 @@ def get_student():
             # Η παρακάτω εντολή χρησιμοποιείται μόνο στη περίπτωση επιτυχούς αναζήτησης φοιτητών (δηλ. υπάρχει φοιτητής με αυτό το email).
         return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
     else:
-        return Response("Log in first",mimetype='application/json'),400 # ΠΡΟΣΘΗΚΗ STATUS
+        return Response("Log in first",mimetype='application/json'),400 
     
     
 

@@ -59,14 +59,35 @@ def login():
         # Μήνυμα λάθους (Λάθος username ή password)
         return Response("Wrong username or password.",mimetype='application/json'),400 # ΠΡΟΣΘΗΚΗ STATUS
 
+# ΕΡΩΤΗΜΑ 8: Εισαγωγή μαθημάτων σε φοιτητή βάσει email 
+@app.route('/addCourses', methods=['PATCH'])
+def add_courses():
+    # Request JSON data
+    data = None 
+    try:
+        data = json.loads(request.data)
+    except Exception as e:
+        return Response("bad json content",status=500,mimetype='application/json')
+    if data == None:
+        return Response("bad request",status=500,mimetype='application/json')
+    if not "email" in data:
+        return Response("Information incomplete",status=500,mimetype="application/json")
+    
+    courses = [
+        data["courses"]
+    ]
 
-@app.route('/getStudents/thirties', methods=['GET'])
-def get_students_thirty():
     if(is_session_valid(document)):
-        student = list(students.find({'yearOfBirth': 1991}))
-        return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
+        if students.find_one({'email': data['email']}):
+            students.update({'email': data['email']}, {'$set': {'courses': courses}})
+            msg = "courses added"
+            return Response(msg, status=200, mimetype='application/json')
+        else:
+            return "No address found"
     else:
         return Response("Log in first",mimetype='application/json') 
+
+
 
 # Εκτέλεση flask service σε debug mode, στην port 5000. 
 if __name__ == '__main__':
