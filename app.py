@@ -37,7 +37,6 @@ def is_session_valid(user_uuid):
 
 # ΕΡΩΤΗΜΑ 1: Δημιουργία χρήστη
 @app.route('/createUser', methods=['POST'])
-@app.route('/createUser', methods=['POST'])
 def create_user():
     # Request JSON data
     data = None 
@@ -51,7 +50,6 @@ def create_user():
         return Response("Information incomplete",status=500,mimetype="application/json")
 
     if users.update({'username': data['username'], 'password':data['password']},data, upsert=True,): 
-        # users.replace_one({'username': data['username'], 'password':data['password']},data, upsert=True,)
         return Response(data['username']+" was added to the MongoDB", mimetype='application/json'),200 # ΠΡΟΣΘΗΚΗ STATUS
     else:
         return Response("A user with the given email already exists", mimetype='application/json'),400 # ΠΡΟΣΘΗΚΗ STATUS
@@ -93,7 +91,6 @@ def get_student():
         return Response("bad request",status=500,mimetype='application/json')
     if not "email" in data:
         return Response("Information incomplete",status=500,mimetype="application/json")
-# session validation to be added
 
     if(is_session_valid(document)):
         student = list(students.find({'email': data['email']}))
