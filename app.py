@@ -195,7 +195,6 @@ def add_courses():
 # ΕΡΩΤΗΜΑ 9: Επιστροφή περασμένων μαθημάτων φοιτητή βάσει email
 @app.route('/getPassedCourses', methods=['GET'])
 def get_courses():
-    # Request JSON data
     student = {}
     data = None 
     try:
