@@ -94,7 +94,6 @@ def get_student():
 
     if(is_session_valid(document)):
         student = list(students.find({'email': data['email']}))
-            # Η παρακάτω εντολή χρησιμοποιείται μόνο στη περίπτωση επιτυχούς αναζήτησης φοιτητών (δηλ. υπάρχει φοιτητής με αυτό το email).
         return Response(json.dumps(student, default=json_util.default), status=200, mimetype='application/json')
     else:
         return Response("Log in first",mimetype='application/json'),400 
